@@ -75,6 +75,7 @@ func handleFunc(c *gin.Context) {
 	name := c.Param("name")
 	if name == "" {
 		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
-	c.File("/opt/st/" + name + ".sh")
+	c.File("/opt/st/func/" + name + ".sh")
 }
