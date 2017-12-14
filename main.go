@@ -8,14 +8,18 @@ import (
 	"net/http"
 )
 
+const (
+	REPO_PATH = "/opt/st"
+)
+
 var (
 	status = ""
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.LstdFlags)
-	if _, err := os.Stat("/opt/st"); os.IsNotExist(err) {
-		err := exec.Command("git", "clone", "https://github.com/wolfogre/st.git", "/opt/st").Run()
+	if _, err := os.Stat(REPO_PATH); os.IsNotExist(err) {
+		err := exec.Command("git", "clone", "https://github.com/wolfogre/st.git", REPO_PATH).Run()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -54,7 +58,7 @@ func handleWebhook(c *gin.Context) {
 		return
 	}
 	cmd := exec.Command("git", "pull")
-	cmd.Dir = "/opt/st/"
+	cmd.Dir = REPO_PATH
 	err := cmd.Run()
 	if err != nil {
 		status = err.Error()
@@ -68,7 +72,7 @@ func handleWebhook(c *gin.Context) {
 }
 
 func handleIndex(c *gin.Context) {
-	c.File("/opt/st/index.sh")
+	c.File(REPO_PATH + "/index.sh")
 }
 
 func handleFunc(c *gin.Context) {
@@ -77,5 +81,5 @@ func handleFunc(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	c.File("/opt/st/func/" + name + ".sh")
+	c.File(REPO_PATH + "/func/" + name)
 }
