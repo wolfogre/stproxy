@@ -81,5 +81,9 @@ func handleFunc(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+	if _, err := os.Stat(REPO_PATH + "/func/" + name); os.IsNotExist(err) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	c.File(REPO_PATH + "/func/" + name)
 }
