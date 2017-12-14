@@ -16,7 +16,9 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.LstdFlags)
 	if _, err := os.Stat("/opt/st"); os.IsNotExist(err) {
 		err := exec.Command("git", "clone", "https://github.com/wolfogre/st.git", "/opt/st").Run()
-		log.Panic(err)
+		if err != nil {
+			log.Panic(err)
+		}
 	}
 
 	engine := gin.New()
@@ -56,10 +58,13 @@ func handleWebhook(c *gin.Context) {
 	err := cmd.Run()
 	if err != nil {
 		status = err.Error()
+	} else {
+		status = ""
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "OK",
 	})
+
 }
 
 func handleIndex(c *gin.Context) {

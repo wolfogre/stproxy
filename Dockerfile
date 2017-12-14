@@ -6,4 +6,4 @@ COPY stproxy /opt/stproxy
 
 EXPOSE 80
 
-ENTRYPOINT stproxy
+ENTRYPOINT /opt/stproxy
