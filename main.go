@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"encoding/json"
 	"time"
+	"strings"
 )
 
 const (
@@ -124,7 +125,7 @@ func pull(commit string) {
 			log.Println(err)
 			continue
 		}
-		lastCommit := string(buffer)
+		lastCommit := strings.TrimSpace(string(buffer))
 		log.Println("last commit: ", lastCommit)
 		if lastCommit == commit {
 			break
