@@ -6,6 +6,12 @@ import (
 	"log"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"io/ioutil"
+	"crypto/hmac"
+	"crypto/sha1"
+	"fmt"
+	"encoding/json"
+	"time"
 )
 
 const (
@@ -14,6 +20,7 @@ const (
 
 var (
 	status = ""
+	secret = ""
 )
 
 func main() {
@@ -24,6 +31,9 @@ func main() {
 			log.Panic(err)
 		}
 	}
+
+	secret = os.Getenv("SECRET")
+	log.Println("secret: ", secret)
 
 	engine := gin.New()
 	engine.Use(gin.Recovery())
@@ -51,24 +61,75 @@ func handleStatus(c *gin.Context) {
 }
 
 func handleWebhook(c *gin.Context) {
+	buffer, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if secret != "" {
+		h := hmac.New(sha1.New, []byte(secret))
+		n, err := h.Write(buffer)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		if n != len(buffer) {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		signature := fmt.Sprintf("sha1=%x", h.Sum(nil))
+		if signature != c.GetHeader("X-Hub-Signature") {
+			c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("wrong signature: %v", c.GetHeader("X-Hub-Signature")))
+			return
+		}
+	}
+
 	if c.GetHeader("X-GitHub-Event") != "push" {
 		c.JSON(http.StatusOK, gin.H{
 			"msg": "OK",
 		})
 		return
 	}
-	cmd := exec.Command("git", "pull")
-	cmd.Dir = REPO_PATH
-	err := cmd.Run()
+
+	body := make(map[string]interface{})
+	err = json.Unmarshal(buffer, body)
 	if err != nil {
-		status = err.Error()
-	} else {
-		status = ""
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
+
+	go pull(body["after"].(string))
+
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "OK",
 	})
 
+}
+
+func pull(commit string) {
+	for i := 0; i < 60; i++ {
+		time.Sleep(time.Second)
+		log.Println("git pull ", commit)
+		cmd := exec.Command("git", "pull")
+		cmd.Dir = REPO_PATH
+		err := cmd.Run()
+		if err != nil {
+			log.Println(err)
+			status = err.Error()
+			continue
+		}
+		buffer, err := ioutil.ReadFile(REPO_PATH + "/.git/refs/heads/master")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		lastCommit := string(buffer)
+		log.Println("last commit: ", lastCommit)
+		if lastCommit == commit {
+			break
+		}
+	}
 }
 
 func handleIndex(c *gin.Context) {
