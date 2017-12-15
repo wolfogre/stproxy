@@ -94,7 +94,7 @@ func handleWebhook(c *gin.Context) {
 	}
 
 	body := make(map[string]interface{})
-	err = json.Unmarshal(buffer, body)
+	err = json.Unmarshal(buffer, &body)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
