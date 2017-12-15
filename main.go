@@ -85,9 +85,9 @@ func handleWebhook(c *gin.Context) {
 		}
 	}
 
-	if c.GetHeader("X-GitHub-Event") != "push" {
+	if c.GetHeader("X-Github-Event") != "push" {
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "OK",
+			"msg": "not push event",
 		})
 		return
 	}
